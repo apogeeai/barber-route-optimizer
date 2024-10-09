@@ -69,10 +69,14 @@ def booking():
         db.session.commit()
 
         flash('Appointment booked successfully')
-        return redirect(url_for('index'))
+        return redirect(url_for('thank_you'))
 
     available_slots = TimeSlot.query.filter_by(is_available=True).all()
     return render_template('booking.html', available_slots=available_slots)
+
+@app.route('/thank_you')
+def thank_you():
+    return render_template('thank_you.html')
 
 @app.route('/barber_view')
 @login_required
