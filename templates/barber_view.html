@@ -6,15 +6,10 @@
 <h1 class="text-3xl font-bold mb-4">Barber's Schedule and Route</h1>
 <div id="map" class="map-container mb-4"></div>
 <h2 class="text-2xl font-bold mb-2">Appointments</h2>
-<ul class="list-disc pl-5" id="appointments-list">
+<ul class="list-disc pl-5">
     {% for appointment in appointments %}
-    <li class="mb-2" id="appointment-{{ appointment.id }}">
+    <li class="mb-2">
         {{ appointment.appointment_time.strftime('%Y-%m-%d %H:%M') }} - {{ appointment.client_name }} ({{ appointment.address }})
-        <select class="status-select" data-appointment-id="{{ appointment.id }}">
-            <option value="scheduled" {% if appointment.status == 'scheduled' %}selected{% endif %}>Scheduled</option>
-            <option value="in_progress" {% if appointment.status == 'in_progress' %}selected{% endif %}>In Progress</option>
-            <option value="completed" {% if appointment.status == 'completed' %}selected{% endif %}>Completed</option>
-        </select>
     </li>
     {% endfor %}
 </ul>
@@ -22,42 +17,5 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
 <script src="{{ url_for('static', filename='js/map.js') }}"></script>
-<script>
-    const socket = io();
-
-    // Update appointment status
-    document.querySelectorAll('.status-select').forEach(select => {
-        select.addEventListener('change', (event) => {
-            const appointmentId = event.target.dataset.appointmentId;
-            const newStatus = event.target.value;
-            socket.emit('update_appointment_status', {appointment_id: appointmentId, status: newStatus});
-        });
-    });
-
-    // Listen for appointment status updates
-    socket.on('appointment_status_updated', (data) => {
-        const appointmentElement = document.getElementById(`appointment-${data.appointment_id}`);
-        if (appointmentElement) {
-            const statusSelect = appointmentElement.querySelector('.status-select');
-            statusSelect.value = data.status;
-        }
-    });
-
-    // Update barber location
-    function updateBarberLocation(position) {
-        const latitude = position.coords.latitude;
-        const longitude = position.coords.longitude;
-        socket.emit('update_barber_location', {latitude: latitude, longitude: longitude});
-    }
-
-    // Get barber's location every 5 minutes
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(updateBarberLocation);
-        setInterval(() => {
-            navigator.geolocation.getCurrentPosition(updateBarberLocation);
-        }, 300000); // 5 minutes
-    }
-</script>
 {% endblock %}
