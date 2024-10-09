@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Book an Appointment{% endblock %}
+
+{% block content %}
+<h1 class="text-3xl font-bold mb-4">Book an Appointment</h1>
+<form action="{{ url_for('booking') }}" method="post" class="max-w-lg mx-auto">
+    <div class="mb-4">
+        <label for="client_name" class="block text-gray-700 text-sm font-bold mb-2">Name:</label>
+        <input type="text" id="client_name" name="client_name" required class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+    </div>
+    <div class="mb-4">
+        <label for="address" class="block text-gray-700 text-sm font-bold mb-2">Address:</label>
+        <input type="text" id="address" name="address" required class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+    </div>
+    <input type="hidden" id="latitude" name="latitude">
+    <input type="hidden" id="longitude" name="longitude">
+    <div id="map" class="map-container mb-4"></div>
+    <div class="mb-4">
+        <label for="appointment_time" class="block text-gray-700 text-sm font-bold mb-2">Appointment Time:</label>
+        <div id="time-slots" class="flex flex-wrap"></div>
+    </div>
+    <div class="flex items-center justify-between">
+        <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+            Book Appointment
+        </button>
+    </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/booking.js') }}"></script>
+{% endblock %}
