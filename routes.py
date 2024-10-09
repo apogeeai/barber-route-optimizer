@@ -68,6 +68,7 @@ def booking():
         db.session.add(new_appointment)
         db.session.commit()
 
+        flash('Appointment booked successfully')
         return redirect(url_for('index'))
 
     available_slots = TimeSlot.query.filter_by(is_available=True).all()
@@ -81,6 +82,7 @@ def barber_view():
     return render_template('barber_view.html', appointments=appointments, optimized_route=json.dumps(optimized_route))
 
 @app.route('/get_available_slots')
+@login_required
 def get_available_slots():
     available_slots = TimeSlot.query.filter_by(is_available=True).all()
     slots = [{'id': slot.id, 'start_time': slot.start_time.isoformat()} for slot in available_slots]

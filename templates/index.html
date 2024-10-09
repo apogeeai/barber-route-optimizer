@@ -1,13 +1,22 @@
 {% extends "base.html" %}
 
-{% block title %}Welcome to Traveling Barber{% endblock %}
+{% block title %}Welcome to The Clippership{% endblock %}
 
 {% block content %}
 <div class="text-center">
-    <h1 class="text-4xl font-bold mb-4">Welcome to Traveling Barber</h1>
+    <h1 class="text-4xl font-bold mb-4">Welcome to The Clippership</h1>
     <p class="text-xl mb-8">Book your appointment with our mobile barber service today!</p>
-    <a href="{{ url_for('booking') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-        Book an Appointment
-    </a>
+    {% if current_user.is_authenticated %}
+        <a href="{{ url_for('booking') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+            Book an Appointment
+        </a>
+    {% else %}
+        <a href="{{ url_for('login') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mr-4">
+            Login
+        </a>
+        <a href="{{ url_for('register') }}" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+            Register
+        </a>
+    {% endif %}
 </div>
 {% endblock %}

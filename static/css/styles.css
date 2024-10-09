@@ -4,3 +4,30 @@
     height: 400px;
     width: 100%;
 }
+
+/* Custom styles for the logo */
+.nav-logo {
+    height: 48px;
+    width: auto;
+    object-fit: contain;
+}
+
+/* Adjust navigation bar height */
+nav {
+    min-height: 64px;
+}
+
+/* Footer floating styles */
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+main {
+    flex: 1;
+}
+
+footer {
+    margin-top: auto;
+}
