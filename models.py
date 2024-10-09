@@ -33,16 +33,27 @@ class TimeSlot(db.Model):
 def init_db():
     db.create_all()
     try:
-        # Check if the alteration is necessary
+        # Check if the alteration is necessary for the user table
         result = db.session.execute(text("SELECT character_maximum_length FROM information_schema.columns WHERE table_name='user' AND column_name='password'"))
         current_length = result.scalar()
         
         if current_length != 255:
             db.session.execute(text('ALTER TABLE "user" ALTER COLUMN password TYPE VARCHAR(255)'))
-            db.session.commit()
             print('Successfully updated password column length to 255')
-        else:
-            print('Password column length is already 255, no update needed')
+
+        # Add user_id column to appointment table if it doesn't exist
+        db.session.execute(text('ALTER TABLE appointment ADD COLUMN IF NOT EXISTS user_id INTEGER'))
+        db.session.execute(text('ALTER TABLE appointment ADD CONSTRAINT IF NOT EXISTS fk_user FOREIGN KEY (user_id) REFERENCES "user"(id)'))
+        print('Successfully added user_id column to appointment table')
+
+        db.session.commit()
     except Exception as e:
-        print(f'Error updating password column length: {str(e)}')
+        print(f'Error updating database schema: {str(e)}')
         db.session.rollback()
+
+    # Create a default user if not exists
+    if not User.query.filter_by(username='admin').first():
+        default_user = User(username='admin', password='admin_password')
+        db.session.add(default_user)
+        db.session.commit()
+        print('Created default admin user')
