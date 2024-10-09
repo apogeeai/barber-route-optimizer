@@ -8,7 +8,9 @@ import json
 
 @app.route('/')
 def index():
-    return redirect('https://clippership.adamsdevideas.com', code=301)
+    if request.host != 'clippership.adamsdevideas.com':
+        return redirect('https://clippership.adamsdevideas.com', code=301)
+    return render_template('index.html')
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -122,6 +124,5 @@ def initialize_time_slots():
             start_date += timedelta(days=1)
         db.session.commit()
 
-# Call initialize_time_slots when the app starts
 with app.app_context():
     initialize_time_slots()
