@@ -67,3 +67,24 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+function generateICalFile(appointment) {
+    const icalContent = `BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+DTSTART:${new Date(appointment.appointment_time).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'}
+DTEND:${new Date(new Date(appointment.appointment_time).getTime() + 60*60*1000).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'}
+SUMMARY:Haircut Appointment
+DESCRIPTION:Appointment with The Clippership
+LOCATION:${appointment.address}
+END:VEVENT
+END:VCALENDAR`;
+
+    const blob = new Blob([icalContent], { type: 'text/calendar;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'haircut_appointment.ics';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
