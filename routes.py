@@ -8,7 +8,7 @@ import json
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return redirect('https://clippership.adamsdevideas.com', code=301)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
