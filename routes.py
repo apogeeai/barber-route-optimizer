@@ -104,6 +104,12 @@ def book_slot():
         return jsonify({'success': True})
     return jsonify({'success': False})
 
+@app.route('/admin')
+@login_required
+def admin():
+    appointments = Appointment.query.order_by(Appointment.appointment_time).all()
+    return render_template('admin.html', appointments=appointments)
+
 def initialize_time_slots():
     if TimeSlot.query.first() is None:
         start_date = datetime.now().replace(hour=9, minute=0, second=0, microsecond=0)
