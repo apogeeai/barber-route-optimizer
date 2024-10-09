@@ -5,7 +5,6 @@ from models import Appointment, TimeSlot, User
 from utils import optimize_route
 from datetime import datetime, timedelta
 import json
-from werkzeug.security import generate_password_hash, check_password_hash
 
 @app.route('/')
 def index():
@@ -16,11 +15,13 @@ def register():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
+        role = request.form.get('role')
         user = User.query.filter_by(username=username).first()
         if user:
             flash('Username already exists')
             return redirect(url_for('register'))
-        new_user = User(username=username, password=generate_password_hash(password))
+        new_user = User(username=username, role=role)
+        new_user.set_password(password)
         db.session.add(new_user)
         db.session.commit()
         flash('Registered successfully')
@@ -33,7 +34,7 @@ def login():
         username = request.form.get('username')
         password = request.form.get('password')
         user = User.query.filter_by(username=username).first()
-        if user and check_password_hash(user.password, password):
+        if user and user.check_password(password):
             login_user(user)
             flash('Logged in successfully')
             return redirect(url_for('index'))
@@ -50,6 +51,9 @@ def logout():
 @app.route('/booking', methods=['GET', 'POST'])
 @login_required
 def booking():
+    if current_user.role != 'client':
+        flash('Only clients can book appointments')
+        return redirect(url_for('index'))
     if request.method == 'POST':
         client_name = request.form['client_name']
         address = request.form['address']
@@ -81,6 +85,9 @@ def thank_you():
 @app.route('/barber_view')
 @login_required
 def barber_view():
+    if current_user.role != 'barber':
+        flash('Only barbers can access this page')
+        return redirect(url_for('index'))
     appointments = Appointment.query.order_by(Appointment.appointment_time).all()
     optimized_route = optimize_route(appointments)
     return render_template('barber_view.html', appointments=appointments, optimized_route=json.dumps(optimized_route))
