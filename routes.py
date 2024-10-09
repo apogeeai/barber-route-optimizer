@@ -6,18 +6,6 @@ from utils import optimize_route
 from datetime import datetime, timedelta
 import json
 from werkzeug.security import generate_password_hash, check_password_hash
-from functools import wraps
-
-def role_required(role):
-    def decorator(f):
-        @wraps(f)
-        def decorated_function(*args, **kwargs):
-            if not current_user.is_authenticated or current_user.role != role:
-                flash('You do not have permission to access this page.')
-                return redirect(url_for('index'))
-            return f(*args, **kwargs)
-        return decorated_function
-    return decorator
 
 @app.route('/')
 def index():
@@ -28,18 +16,13 @@ def register():
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
-        role = request.form.get('role')
-        
-        if role not in ['client', 'barber']:
-            flash('Invalid role selected')
-            return redirect(url_for('register'))
         
         user = User.query.filter_by(username=username).first()
         if user:
             flash('Username already exists')
             return redirect(url_for('register'))
         
-        new_user = User(username=username, password=generate_password_hash(password), role=role)
+        new_user = User(username=username, password=generate_password_hash(password))
         db.session.add(new_user)
         db.session.commit()
         flash('Registered successfully')
@@ -68,7 +51,6 @@ def logout():
 
 @app.route('/booking', methods=['GET', 'POST'])
 @login_required
-@role_required('client')
 def booking():
     if request.method == 'POST':
         client_name = request.form['client_name']
@@ -95,14 +77,12 @@ def booking():
 
 @app.route('/thank_you/<int:appointment_id>')
 @login_required
-@role_required('client')
 def thank_you(appointment_id):
     appointment = Appointment.query.get_or_404(appointment_id)
     return render_template('thank_you.html', appointment=appointment)
 
 @app.route('/barber_view')
 @login_required
-@role_required('barber')
 def barber_view():
     appointments = Appointment.query.order_by(Appointment.appointment_time).all()
     optimized_route = optimize_route(appointments)
@@ -110,7 +90,6 @@ def barber_view():
 
 @app.route('/get_available_slots')
 @login_required
-@role_required('client')
 def get_available_slots():
     available_slots = TimeSlot.query.filter_by(is_available=True).all()
     slots = [{'id': slot.id, 'start_time': slot.start_time.isoformat()} for slot in available_slots]
@@ -118,7 +97,6 @@ def get_available_slots():
 
 @app.route('/book_slot', methods=['POST'])
 @login_required
-@role_required('client')
 def book_slot():
     slot_id = request.form['slot_id']
     slot = TimeSlot.query.get(slot_id)
