@@ -3,6 +3,7 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 from flask_login import LoginManager
+from flask_socketio import SocketIO
 
 class Base(DeclarativeBase):
     pass
@@ -21,6 +22,8 @@ db.init_app(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
+
+socketio = SocketIO(app)
 
 @login_manager.user_loader
 def load_user(user_id):

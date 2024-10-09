@@ -1,6 +1,7 @@
 from flask import render_template, request, redirect, url_for, jsonify, flash
 from flask_login import login_user, login_required, logout_user, current_user
-from app import app, db
+from flask_socketio import emit
+from app import app, db, socketio
 from models import Appointment, TimeSlot, User
 from utils import optimize_route
 from datetime import datetime, timedelta
@@ -110,6 +111,28 @@ def admin():
     appointments = Appointment.query.order_by(Appointment.appointment_time).all()
     return render_template('admin.html', appointments=appointments)
 
+@app.route('/client_view/<int:appointment_id>')
+@login_required
+def client_view(appointment_id):
+    appointment = Appointment.query.get_or_404(appointment_id)
+    return render_template('client_view.html', appointment=appointment)
+
+@socketio.on('update_appointment_status')
+def update_appointment_status(data):
+    appointment_id = data['appointment_id']
+    new_status = data['status']
+    appointment = Appointment.query.get(appointment_id)
+    if appointment:
+        appointment.status = new_status
+        db.session.commit()
+        emit('appointment_status_updated', {'appointment_id': appointment_id, 'status': new_status}, broadcast=True)
+
+@socketio.on('update_barber_location')
+def update_barber_location(data):
+    latitude = data['latitude']
+    longitude = data['longitude']
+    emit('barber_location_updated', {'latitude': latitude, 'longitude': longitude}, broadcast=True)
+
 def initialize_time_slots():
     if TimeSlot.query.first() is None:
         start_date = datetime.now().replace(hour=9, minute=0, second=0, microsecond=0)
@@ -122,6 +145,8 @@ def initialize_time_slots():
             start_date += timedelta(days=1)
         db.session.commit()
 
-# Call initialize_time_slots when the app starts
 with app.app_context():
     initialize_time_slots()
+
+if __name__ == '__main__':
+    socketio.run(app, host='0.0.0.0', port=5000)
