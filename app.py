@@ -28,7 +28,7 @@ def load_user(user_id):
     return User.query.get(int(user_id))
 
 with app.app_context():
-    import models
-    db.create_all()
+    from models import init_db
+    init_db()
 
 import routes

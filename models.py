@@ -5,7 +5,7 @@ from flask_login import UserMixin
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
-    password = db.Column(db.String(120), nullable=False)
+    password = db.Column(db.String(255), nullable=False)
     appointments = db.relationship('Appointment', backref='user', lazy=True)
 
 class Appointment(db.Model):
@@ -28,3 +28,13 @@ class TimeSlot(db.Model):
 
     def __repr__(self):
         return f'<TimeSlot {self.id}: {self.start_time} - Available: {self.is_available}>'
+
+def init_db():
+    db.create_all()
+    try:
+        db.session.execute('ALTER TABLE "user" ALTER COLUMN password TYPE VARCHAR(255)')
+        db.session.commit()
+        print('Successfully updated password column length')
+    except Exception as e:
+        print(f'Error updating password column length: {e}')
+        db.session.rollback()
