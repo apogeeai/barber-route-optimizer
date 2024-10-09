@@ -16,9 +16,12 @@
                 <img src="{{ url_for('static', filename='images/Clippership-logo.png') }}" alt="The Clippership Logo" class="h-12 mr-2">
             </a>
             <div>
-                <a href="{{ url_for('booking') }}" class="text-white hover:text-blue-200 mr-4">Book Appointment</a>
-                <a href="{{ url_for('barber_view') }}" class="text-white hover:text-blue-200 mr-4">Barber View</a>
                 {% if current_user.is_authenticated %}
+                    {% if current_user.role == 'client' %}
+                        <a href="{{ url_for('booking') }}" class="text-white hover:text-blue-200 mr-4">Book Appointment</a>
+                    {% elif current_user.role == 'barber' %}
+                        <a href="{{ url_for('barber_view') }}" class="text-white hover:text-blue-200 mr-4">Barber View</a>
+                    {% endif %}
                     <span class="text-white mr-4">Welcome, {{ current_user.username }}</span>
                     <a href="{{ url_for('logout') }}" class="text-white hover:text-blue-200">Logout</a>
                 {% else %}

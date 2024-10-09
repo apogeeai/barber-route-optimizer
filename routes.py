@@ -8,7 +8,7 @@ import json
 
 @app.route('/')
 def index():
-    if request.host != 'clippership.adamsdevideas.com':
+    if request.host != 'clippership.adamsdevideas.com' and request.host != request.headers.get('Host'):
         return redirect('https://clippership.adamsdevideas.com', code=301)
     return render_template('index.html')
 
