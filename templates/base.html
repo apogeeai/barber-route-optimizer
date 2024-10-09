@@ -14,12 +14,30 @@
             <a href="{{ url_for('index') }}" class="text-white text-2xl font-bold">Traveling Barber</a>
             <div>
                 <a href="{{ url_for('booking') }}" class="text-white hover:text-blue-200 mr-4">Book Appointment</a>
-                <a href="{{ url_for('barber_view') }}" class="text-white hover:text-blue-200">Barber View</a>
+                <a href="{{ url_for('barber_view') }}" class="text-white hover:text-blue-200 mr-4">Barber View</a>
+                {% if current_user.is_authenticated %}
+                    <span class="text-white mr-4">Welcome, {{ current_user.username }}</span>
+                    <a href="{{ url_for('logout') }}" class="text-white hover:text-blue-200">Logout</a>
+                {% else %}
+                    <a href="{{ url_for('login') }}" class="text-white hover:text-blue-200 mr-4">Login</a>
+                    <a href="{{ url_for('register') }}" class="text-white hover:text-blue-200">Register</a>
+                {% endif %}
             </div>
         </div>
     </nav>
 
     <main class="container mx-auto mt-8 p-4">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="bg-blue-100 border-t border-b border-blue-500 text-blue-700 px-4 py-3 mb-4" role="alert">
+                    <ul class="list-disc list-inside">
+                        {% for message in messages %}
+                            <li>{{ message }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+        {% endwith %}
         {% block content %}{% endblock %}
     </main>
 

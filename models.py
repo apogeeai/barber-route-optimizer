@@ -1,5 +1,12 @@
 from app import db
 from datetime import datetime
+from flask_login import UserMixin
+
+class User(UserMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    password = db.Column(db.String(120), nullable=False)
+    appointments = db.relationship('Appointment', backref='user', lazy=True)
 
 class Appointment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -9,6 +16,7 @@ class Appointment(db.Model):
     longitude = db.Column(db.Float, nullable=False)
     appointment_time = db.Column(db.DateTime, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
     def __repr__(self):
         return f'<Appointment {self.id}: {self.client_name} at {self.appointment_time}>'

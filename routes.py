@@ -1,15 +1,54 @@
-from flask import render_template, request, redirect, url_for, jsonify
+from flask import render_template, request, redirect, url_for, jsonify, flash
+from flask_login import login_user, login_required, logout_user, current_user
 from app import app, db
-from models import Appointment, TimeSlot
+from models import Appointment, TimeSlot, User
 from utils import optimize_route
 from datetime import datetime, timedelta
 import json
+from werkzeug.security import generate_password_hash, check_password_hash
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        user = User.query.filter_by(username=username).first()
+        if user:
+            flash('Username already exists')
+            return redirect(url_for('register'))
+        new_user = User(username=username, password=generate_password_hash(password))
+        db.session.add(new_user)
+        db.session.commit()
+        flash('Registered successfully')
+        return redirect(url_for('login'))
+    return render_template('register.html')
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        user = User.query.filter_by(username=username).first()
+        if user and check_password_hash(user.password, password):
+            login_user(user)
+            flash('Logged in successfully')
+            return redirect(url_for('index'))
+        flash('Invalid username or password')
+    return render_template('login.html')
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    flash('Logged out successfully')
+    return redirect(url_for('index'))
+
 @app.route('/booking', methods=['GET', 'POST'])
+@login_required
 def booking():
     if request.method == 'POST':
         client_name = request.form['client_name']
@@ -23,7 +62,8 @@ def booking():
             address=address,
             latitude=latitude,
             longitude=longitude,
-            appointment_time=appointment_time
+            appointment_time=appointment_time,
+            user_id=current_user.id
         )
         db.session.add(new_appointment)
         db.session.commit()
@@ -34,6 +74,7 @@ def booking():
     return render_template('booking.html', available_slots=available_slots)
 
 @app.route('/barber_view')
+@login_required
 def barber_view():
     appointments = Appointment.query.order_by(Appointment.appointment_time).all()
     optimized_route = optimize_route(appointments)
@@ -46,6 +87,7 @@ def get_available_slots():
     return jsonify(slots)
 
 @app.route('/book_slot', methods=['POST'])
+@login_required
 def book_slot():
     slot_id = request.form['slot_id']
     slot = TimeSlot.query.get(slot_id)
