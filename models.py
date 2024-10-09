@@ -7,6 +7,7 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False)
+    role = db.Column(db.String(20), nullable=False, default='client')  # 'client' or 'barber'
     appointments = db.relationship('Appointment', backref='user', lazy=True)
 
 class Appointment(db.Model):
@@ -43,6 +44,14 @@ def init_db():
             print('Successfully updated password column length to 255')
         else:
             print('Password column length is already 255, no update needed')
+
+        # Add role column if it doesn't exist
+        if 'role' not in [column.name for column in User.__table__.columns]:
+            db.session.execute(text('ALTER TABLE "user" ADD COLUMN role VARCHAR(20) NOT NULL DEFAULT \'client\''))
+            db.session.commit()
+            print('Successfully added role column to User table')
+        else:
+            print('Role column already exists in User table')
     except Exception as e:
-        print(f'Error updating password column length: {str(e)}')
+        print(f'Error updating User table: {str(e)}')
         db.session.rollback()
