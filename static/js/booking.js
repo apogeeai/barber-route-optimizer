@@ -4,8 +4,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const longitudeInput = document.getElementById('longitude');
     const timeSlotsContainer = document.getElementById('time-slots');
 
-    // Initialize Leaflet map
-    const map = L.map('map').setView([0, 0], 2);
+    // Initialize Leaflet map centered on Boston
+    const map = L.map('map').setView([42.3601, -71.0589], 12);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     }).addTo(map);
