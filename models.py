@@ -44,5 +44,5 @@ def init_db():
         else:
             print('Password column length is already 255, no update needed')
     except Exception as e:
-        print(f'Error updating User table: {str(e)}')
+        print(f'Error updating password column length: {str(e)}')
         db.session.rollback()
