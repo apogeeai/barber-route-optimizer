@@ -39,7 +39,10 @@ def login():
         if user and user.check_password(password):
             login_user(user)
             flash('Logged in successfully')
-            return redirect(url_for('index'))
+            if user.role == 'barber':
+                return redirect(url_for('barber_view'))
+            else:
+                return redirect(url_for('booking'))
         flash('Invalid username or password')
     return render_template('login.html')
 
