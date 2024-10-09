@@ -68,16 +68,15 @@ def booking():
         db.session.add(new_appointment)
         db.session.commit()
 
-        return redirect(url_for('booking_confirmation', appointment_id=new_appointment.id))
+        flash('Appointment booked successfully')
+        return redirect(url_for('thank_you'))
 
     available_slots = TimeSlot.query.filter_by(is_available=True).all()
     return render_template('booking.html', available_slots=available_slots)
 
-@app.route('/booking_confirmation/<int:appointment_id>')
-@login_required
-def booking_confirmation(appointment_id):
-    appointment = Appointment.query.get_or_404(appointment_id)
-    return render_template('booking_confirmation.html', appointment=appointment)
+@app.route('/thank_you')
+def thank_you():
+    return render_template('thank_you.html')
 
 @app.route('/barber_view')
 @login_required
