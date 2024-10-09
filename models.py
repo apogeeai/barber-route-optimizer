@@ -1,6 +1,7 @@
 from app import db
 from datetime import datetime
 from flask_login import UserMixin
+from sqlalchemy import text
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -32,9 +33,16 @@ class TimeSlot(db.Model):
 def init_db():
     db.create_all()
     try:
-        db.session.execute('ALTER TABLE "user" ALTER COLUMN password TYPE VARCHAR(255)')
-        db.session.commit()
-        print('Successfully updated password column length')
+        # Check if the alteration is necessary
+        result = db.session.execute(text("SELECT character_maximum_length FROM information_schema.columns WHERE table_name='user' AND column_name='password'"))
+        current_length = result.scalar()
+        
+        if current_length != 255:
+            db.session.execute(text('ALTER TABLE "user" ALTER COLUMN password TYPE VARCHAR(255)'))
+            db.session.commit()
+            print('Successfully updated password column length to 255')
+        else:
+            print('Password column length is already 255, no update needed')
     except Exception as e:
-        print(f'Error updating password column length: {e}')
+        print(f'Error updating password column length: {str(e)}')
         db.session.rollback()
