@@ -3,29 +3,44 @@
 {% block title %}Client Dashboard{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8">
-    <h1 class="text-3xl font-bold mb-6">Welcome, {{ current_user.username }}</h1>
+<h1 class="text-3xl font-bold mb-4">Your Appointments</h1>
+<div id="map" class="map-container mb-4"></div>
+<ul id="appointments-list" class="list-disc pl-5">
+    {% for appointment in appointments %}
+    <li class="mb-2" id="appointment-{{ appointment.id }}">
+        {{ appointment.appointment_time.strftime('%Y-%m-%d %H:%M') }} - {{ appointment.address }}
+        <span class="appointment-status">Status: {{ appointment.status }}</span>
+    </li>
+    {% endfor %}
+</ul>
+<a href="{{ url_for('booking') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-4 inline-block">Book New Appointment</a>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+<script src="{{ url_for('static', filename='js/map.js') }}"></script>
+<script>
+    const socket = io();
     
-    <div class="mb-8">
-        <h2 class="text-2xl font-semibold mb-4">Your Appointments</h2>
-        {% if appointments %}
-            <ul class="bg-white shadow-md rounded-lg divide-y divide-gray-200">
-                {% for appointment in appointments %}
-                    <li class="p-4 hover:bg-gray-50">
-                        <p class="font-semibold">{{ appointment.appointment_time.strftime('%Y-%m-%d %H:%M') }}</p>
-                        <p>Address: {{ appointment.address }}</p>
-                    </li>
-                {% endfor %}
-            </ul>
-        {% else %}
-            <p class="text-gray-600">You have no upcoming appointments.</p>
-        {% endif %}
-    </div>
-    
-    <div>
-        <a href="{{ url_for('booking') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-            Book New Appointment
-        </a>
-    </div>
-</div>
+    socket.on('connect', () => {
+        console.log('Connected to server');
+    });
+
+    socket.on('appointment_status_updated', (data) => {
+        const appointmentElement = document.getElementById(`appointment-${data.appointment_id}`);
+        if (appointmentElement) {
+            const statusSpan = appointmentElement.querySelector('.appointment-status');
+            statusSpan.textContent = `Status: ${data.status}`;
+        }
+    });
+
+    socket.on('barber_location_updated', (data) => {
+        updateBarberLocation(data.latitude, data.longitude);
+    });
+
+    function updateBarberLocation(latitude, longitude) {
+        // Update the map with the new barber location
+        // This function should be implemented in your map.js file
+    }
+</script>
 {% endblock %}

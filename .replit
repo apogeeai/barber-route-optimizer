@@ -29,7 +29,7 @@ agentRequireRestartOnSave = false
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python main.py"
-waitForPort = 8080
+waitForPort = 5000
 
 [[workflows.workflow]]
 name = "Verify Database Connection"

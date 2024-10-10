@@ -6,16 +6,105 @@
 <h1 class="text-3xl font-bold mb-4">Barber's Schedule and Route</h1>
 <div id="map" class="map-container mb-4"></div>
 <h2 class="text-2xl font-bold mb-2">Appointments</h2>
-<ul class="list-disc pl-5">
+<ul id="appointments-list" class="list-disc pl-5">
     {% for appointment in appointments %}
-    <li class="mb-2">
+    <li class="mb-2" id="appointment-{{ appointment.id }}">
         {{ appointment.appointment_time.strftime('%Y-%m-%d %H:%M') }} - {{ appointment.client_name }} ({{ appointment.address }})
+        <select class="appointment-status" data-appointment-id="{{ appointment.id }}">
+            <option value="scheduled" {% if appointment.status == 'scheduled' %}selected{% endif %}>Scheduled</option>
+            <option value="in_progress" {% if appointment.status == 'in_progress' %}selected{% endif %}>In Progress</option>
+            <option value="completed" {% if appointment.status == 'completed' %}selected{% endif %}>Completed</option>
+            <option value="cancelled" {% if appointment.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+        </select>
     </li>
     {% endfor %}
 </ul>
 <div id="optimized-route" style="display: none;">{{ optimized_route | safe }}</div>
+<button id="update-location" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-4">Update Location</button>
 {% endblock %}
 
 {% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
 <script src="{{ url_for('static', filename='js/map.js') }}"></script>
+<script>
+    const socket = io();
+    
+    socket.on('connect', () => {
+        console.log('Connected to server');
+    });
+
+    socket.on('appointment_status_updated', (data) => {
+        const appointmentElement = document.getElementById(`appointment-${data.appointment_id}`);
+        if (appointmentElement) {
+            const statusSelect = appointmentElement.querySelector('.appointment-status');
+            statusSelect.value = data.status;
+        }
+    });
+
+    socket.on('barber_location_updated', (data) => {
+        updateBarberLocation(data.latitude, data.longitude);
+    });
+
+    document.querySelectorAll('.appointment-status').forEach(select => {
+        select.addEventListener('change', (event) => {
+            const appointmentId = event.target.dataset.appointmentId;
+            const newStatus = event.target.value;
+            
+            fetch('/update_appointment_status', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    appointment_id: appointmentId,
+                    status: newStatus
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('Appointment status updated successfully');
+                } else {
+                    console.error('Failed to update appointment status');
+                }
+            });
+        });
+    });
+
+    document.getElementById('update-location').addEventListener('click', () => {
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition((position) => {
+                const latitude = position.coords.latitude;
+                const longitude = position.coords.longitude;
+                
+                fetch('/update_barber_location', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        latitude: latitude,
+                        longitude: longitude
+                    }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        console.log('Barber location updated successfully');
+                        updateBarberLocation(latitude, longitude);
+                    } else {
+                        console.error('Failed to update barber location');
+                    }
+                });
+            });
+        } else {
+            console.error('Geolocation is not supported by this browser.');
+        }
+    });
+
+    function updateBarberLocation(latitude, longitude) {
+        // Update the map with the new barber location
+        // This function should be implemented in your map.js file
+    }
+</script>
 {% endblock %}

@@ -1,6 +1,7 @@
-from flask import render_template, request, redirect, url_for, flash
+from flask import render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_user, login_required, logout_user, current_user
-from app import app, db
+from flask_socketio import emit
+from app import app, db, socketio
 from models import Appointment, TimeSlot, User
 from utils import optimize_route, is_password_strong
 from datetime import datetime, timedelta
@@ -46,7 +47,6 @@ def register():
         db.session.add(new_user)
         db.session.commit()
 
-        # Send verification email
         verification_link = url_for('verify_email', token=new_user.verification_token, _external=True)
         msg = Message('Verify Your Email', recipients=[new_user.email])
         msg.body = f'Click the following link to verify your email: {verification_link}'
@@ -174,6 +174,47 @@ def book_slot():
         db.session.commit()
         return json.dumps({'success': True})
     return json.dumps({'success': False})
+
+@app.route('/update_appointment_status', methods=['POST'])
+@login_required
+def update_appointment_status():
+    if current_user.role != 'barber':
+        return jsonify({'success': False, 'message': 'Only barbers can update appointment status'}), 403
+    
+    appointment_id = request.json.get('appointment_id')
+    new_status = request.json.get('status')
+    
+    appointment = Appointment.query.get(appointment_id)
+    if not appointment:
+        return jsonify({'success': False, 'message': 'Appointment not found'}), 404
+    
+    appointment.status = new_status
+    db.session.commit()
+    
+    socketio.emit('appointment_status_updated', {'appointment_id': appointment_id, 'status': new_status}, room=str(appointment.user_id))
+    return jsonify({'success': True, 'message': 'Appointment status updated'})
+
+@app.route('/update_barber_location', methods=['POST'])
+@login_required
+def update_barber_location():
+    if current_user.role != 'barber':
+        return jsonify({'success': False, 'message': 'Only barbers can update their location'}), 403
+    
+    latitude = request.json.get('latitude')
+    longitude = request.json.get('longitude')
+    
+    socketio.emit('barber_location_updated', {'latitude': latitude, 'longitude': longitude}, broadcast=True)
+    return jsonify({'success': True, 'message': 'Barber location updated'})
+
+@socketio.on('connect')
+def handle_connect():
+    if current_user.is_authenticated:
+        socketio.emit('user_connected', {'user_id': current_user.id, 'username': current_user.username})
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    if current_user.is_authenticated:
+        socketio.emit('user_disconnected', {'user_id': current_user.id, 'username': current_user.username})
 
 def initialize_time_slots():
     if TimeSlot.query.first() is None:

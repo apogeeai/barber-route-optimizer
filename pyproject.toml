@@ -13,4 +13,5 @@ dependencies = [
     "sqlalchemy>=2.0.35",
     "werkzeug",
     "flask-mail>=0.10.0",
+    "flask-socketio>=5.4.1",
 ]

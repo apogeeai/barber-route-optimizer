@@ -3,6 +3,7 @@ from flask import Flask, request
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 from flask_login import LoginManager, current_user, login_user, logout_user, login_required
+from flask_socketio import SocketIO
 import logging
 
 logging.basicConfig(level=logging.DEBUG)
@@ -31,6 +32,8 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
+socketio = SocketIO(app)
+
 @login_manager.user_loader
 def load_user(user_id):
     from models import User
@@ -51,4 +54,4 @@ except Exception as e:
 import routes
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080)
+    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
