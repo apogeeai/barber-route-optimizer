@@ -22,6 +22,8 @@ body {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
+    position: relative;
+    z-index: 1;
 }
 
 main {
@@ -44,11 +46,21 @@ body::before {
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    opacity: 0.5;
+    opacity: 1;
+}
+
+.container {
+    background-color: rgba(255, 255, 255, 0.8);
+    padding: 20px;
+    border-radius: 10px;
 }
 
 @media (max-width: 768px) {
     body::before {
-        background-size: contain;
+        background-size: cover;
+    }
+    
+    .container {
+        padding: 10px;
     }
 }
