@@ -2,9 +2,19 @@ from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_user, login_required, logout_user, current_user
 from app import app, db
 from models import Appointment, TimeSlot, User
-from utils import optimize_route
+from utils import optimize_route, is_password_strong
 from datetime import datetime, timedelta
 import json
+from flask_mail import Mail, Message
+
+app.config['MAIL_SERVER'] = 'smtp.example.com'  # Replace with your SMTP server
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = 'your_email@example.com'  # Replace with your email
+app.config['MAIL_PASSWORD'] = 'your_email_password'  # Replace with your email password
+app.config['MAIL_DEFAULT_SENDER'] = 'your_email@example.com'  # Replace with your email
+
+mail = Mail(app)
 
 @app.route('/')
 def index():
@@ -19,20 +29,44 @@ def register():
         role = request.form.get('role')
         
         if User.query.filter_by(username=username).first():
-            flash('Username already exists')
+            flash('Username already exists', 'error')
             return redirect(url_for('register'))
         
         if User.query.filter_by(email=email).first():
-            flash('Email already exists')
+            flash('Email already exists', 'error')
             return redirect(url_for('register'))
         
+        if not is_password_strong(password):
+            flash('Password is not strong enough. It should be at least 8 characters long and contain uppercase, lowercase, digit, and special character.', 'error')
+            return redirect(url_for('register'))
+
         new_user = User(username=username, email=email, role=role)
         new_user.set_password(password)
+        new_user.generate_verification_token()
         db.session.add(new_user)
         db.session.commit()
-        flash('Registered successfully')
+
+        # Send verification email
+        verification_link = url_for('verify_email', token=new_user.verification_token, _external=True)
+        msg = Message('Verify Your Email', recipients=[new_user.email])
+        msg.body = f'Click the following link to verify your email: {verification_link}'
+        mail.send(msg)
+
+        flash('Registered successfully. Please check your email for verification.', 'success')
         return redirect(url_for('login'))
     return render_template('register.html')
+
+@app.route('/verify_email/<token>')
+def verify_email(token):
+    user = User.query.filter_by(verification_token=token).first()
+    if user:
+        user.is_verified = True
+        user.verification_token = None
+        db.session.commit()
+        flash('Your email has been verified. You can now log in.', 'success')
+    else:
+        flash('Invalid verification token.', 'error')
+    return redirect(url_for('login'))
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -43,13 +77,16 @@ def login():
         password = request.form.get('password')
         user = User.query.filter_by(username=username).first()
         if user and user.check_password(password):
+            if not user.is_verified:
+                flash('Please verify your email before logging in.', 'error')
+                return redirect(url_for('login'))
             login_user(user)
-            flash('Logged in successfully')
+            flash('Logged in successfully', 'success')
             if user.role == 'barber':
                 return redirect(url_for('barber_view'))
             else:
                 return redirect(url_for('client_dashboard'))
-        flash('Invalid username or password')
+        flash('Invalid username or password', 'error')
     return render_template('login.html')
 
 @app.route('/logout')

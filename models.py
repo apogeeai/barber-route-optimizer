@@ -4,6 +4,7 @@ from flask_login import UserMixin
 from sqlalchemy import text, exc, Column, String
 from werkzeug.security import generate_password_hash, check_password_hash
 import logging
+import secrets
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -15,6 +16,8 @@ class User(UserMixin, db.Model):
     password = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(20), nullable=False, default='client')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    is_verified = db.Column(db.Boolean, default=False)
+    verification_token = db.Column(db.String(100), unique=True)
     appointments = db.relationship('Appointment', backref='user', lazy=True)
 
     def set_password(self, password):
@@ -22,6 +25,10 @@ class User(UserMixin, db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password, password)
+
+    def generate_verification_token(self):
+        self.verification_token = secrets.token_urlsafe(32)
+        return self.verification_token
 
     def __repr__(self):
         return f'<User {self.username}>'
@@ -56,11 +63,10 @@ def init_db():
         return
 
     try:
-        # Check if the 'created_at' column exists in the 'user' table
         inspector = db.inspect(db.engine)
         columns = [c['name'] for c in inspector.get_columns('user')]
+        
         if 'created_at' not in columns:
-            # Add the 'created_at' column if it doesn't exist
             with db.engine.connect() as conn:
                 conn.execute(text('ALTER TABLE "user" ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP'))
                 conn.commit()
@@ -68,7 +74,18 @@ def init_db():
         else:
             logger.info('Created_at column already exists in user table')
 
-        # Print the current schema of the 'user' table
+        if 'is_verified' not in columns:
+            with db.engine.connect() as conn:
+                conn.execute(text('ALTER TABLE "user" ADD COLUMN is_verified BOOLEAN DEFAULT FALSE'))
+                conn.commit()
+            logger.info('Successfully added is_verified column to user table')
+
+        if 'verification_token' not in columns:
+            with db.engine.connect() as conn:
+                conn.execute(text('ALTER TABLE "user" ADD COLUMN verification_token VARCHAR(100) UNIQUE'))
+                conn.commit()
+            logger.info('Successfully added verification_token column to user table')
+
         logger.info("Current schema of 'user' table:")
         for column in inspector.get_columns('user'):
             logger.info(f"Column: {column['name']}, Type: {column['type']}")
@@ -77,7 +94,6 @@ def init_db():
         logger.error(f'Error updating database schema: {str(e)}')
         return
 
-    # Create a default barber user if not exists
     try:
         default_barber = User.query.filter_by(username='barber').first()
         if not default_barber:

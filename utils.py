@@ -1,3 +1,4 @@
+import re
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
 
@@ -57,3 +58,21 @@ def calculate_distance(loc1, loc2):
     # Simple Euclidean distance for demonstration
     # In a real-world scenario, you'd use a more accurate distance calculation or a mapping API
     return ((loc1[0] - loc2[0])**2 + (loc1[1] - loc2[1])**2)**0.5
+
+def is_password_strong(password):
+    """
+    Check if the password is strong enough.
+    Password should be at least 8 characters long and contain at least one uppercase letter,
+    one lowercase letter, one digit, and one special character.
+    """
+    if len(password) < 8:
+        return False
+    if not re.search(r"[A-Z]", password):
+        return False
+    if not re.search(r"[a-z]", password):
+        return False
+    if not re.search(r"\d", password):
+        return False
+    if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", password):
+        return False
+    return True
