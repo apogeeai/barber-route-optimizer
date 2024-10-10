@@ -1,4 +1,4 @@
-from flask import render_template, request, redirect, url_for, jsonify, flash
+from flask import render_template, request, redirect, url_for, flash
 from flask_login import login_user, login_required, logout_user, current_user
 from app import app, db
 from models import Appointment, TimeSlot, User
@@ -14,13 +14,19 @@ def index():
 def register():
     if request.method == 'POST':
         username = request.form.get('username')
+        email = request.form.get('email')
         password = request.form.get('password')
         role = request.form.get('role')
-        user = User.query.filter_by(username=username).first()
-        if user:
+        
+        if User.query.filter_by(username=username).first():
             flash('Username already exists')
             return redirect(url_for('register'))
-        new_user = User(username=username, role=role)
+        
+        if User.query.filter_by(email=email).first():
+            flash('Email already exists')
+            return redirect(url_for('register'))
+        
+        new_user = User(username=username, email=email, role=role)
         new_user.set_password(password)
         db.session.add(new_user)
         db.session.commit()
@@ -30,6 +36,8 @@ def register():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
@@ -40,7 +48,7 @@ def login():
             if user.role == 'barber':
                 return redirect(url_for('barber_view'))
             else:
-                return redirect(url_for('booking'))
+                return redirect(url_for('client_dashboard'))
         flash('Invalid username or password')
     return render_template('login.html')
 
@@ -50,6 +58,23 @@ def logout():
     logout_user()
     flash('Logged out successfully')
     return redirect(url_for('index'))
+
+@app.route('/dashboard')
+@login_required
+def dashboard():
+    if current_user.role == 'barber':
+        return redirect(url_for('barber_view'))
+    else:
+        return redirect(url_for('client_dashboard'))
+
+@app.route('/client_dashboard')
+@login_required
+def client_dashboard():
+    if current_user.role != 'client':
+        flash('Access denied')
+        return redirect(url_for('index'))
+    appointments = Appointment.query.filter_by(user_id=current_user.id).order_by(Appointment.appointment_time).all()
+    return render_template('client_dashboard.html', appointments=appointments)
 
 @app.route('/booking', methods=['GET', 'POST'])
 @login_required
@@ -76,7 +101,7 @@ def booking():
         db.session.commit()
 
         flash('Appointment booked successfully')
-        return redirect(url_for('thank_you'))
+        return redirect(url_for('client_dashboard'))
 
     available_slots = TimeSlot.query.filter_by(is_available=True).all()
     return render_template('booking.html', available_slots=available_slots)
@@ -100,7 +125,7 @@ def barber_view():
 def get_available_slots():
     available_slots = TimeSlot.query.filter_by(is_available=True).all()
     slots = [{'id': slot.id, 'start_time': slot.start_time.isoformat()} for slot in available_slots]
-    return jsonify(slots)
+    return json.dumps(slots)
 
 @app.route('/book_slot', methods=['POST'])
 @login_required
@@ -110,8 +135,8 @@ def book_slot():
     if slot and slot.is_available:
         slot.is_available = False
         db.session.commit()
-        return jsonify({'success': True})
-    return jsonify({'success': False})
+        return json.dumps({'success': True})
+    return json.dumps({'success': False})
 
 def initialize_time_slots():
     if TimeSlot.query.first() is None:

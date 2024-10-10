@@ -11,8 +11,10 @@ logger = logging.getLogger(__name__)
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(20), nullable=False, default='client')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
     appointments = db.relationship('Appointment', backref='user', lazy=True)
 
     def set_password(self, password):
@@ -20,6 +22,9 @@ class User(UserMixin, db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password, password)
+
+    def __repr__(self):
+        return f'<User {self.username}>'
 
 class Appointment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -51,31 +56,22 @@ def init_db():
         return
 
     try:
-        # Check if the 'role' column exists in the 'user' table
+        # Check if the 'created_at' column exists in the 'user' table
         inspector = db.inspect(db.engine)
         columns = [c['name'] for c in inspector.get_columns('user')]
-        if 'role' not in columns:
-            # Add the 'role' column if it doesn't exist
+        if 'created_at' not in columns:
+            # Add the 'created_at' column if it doesn't exist
             with db.engine.connect() as conn:
-                conn.execute(text('ALTER TABLE "user" ADD COLUMN role VARCHAR(20) DEFAULT \'client\''))
+                conn.execute(text('ALTER TABLE "user" ADD COLUMN created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP'))
                 conn.commit()
-            logger.info('Successfully added role column to user table')
+            logger.info('Successfully added created_at column to user table')
         else:
-            logger.info('Role column already exists in user table')
+            logger.info('Created_at column already exists in user table')
 
         # Print the current schema of the 'user' table
         logger.info("Current schema of 'user' table:")
         for column in inspector.get_columns('user'):
             logger.info(f"Column: {column['name']}, Type: {column['type']}")
-
-        # Add user_id column to appointment table if it doesn't exist
-        appointment_columns = [c['name'] for c in inspector.get_columns('appointment')]
-        if 'user_id' not in appointment_columns:
-            with db.engine.connect() as conn:
-                conn.execute(text('ALTER TABLE appointment ADD COLUMN user_id INTEGER'))
-                conn.execute(text('ALTER TABLE appointment ADD CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES "user"(id)'))
-                conn.commit()
-            logger.info('Successfully added user_id column to appointment table')
 
     except exc.SQLAlchemyError as e:
         logger.error(f'Error updating database schema: {str(e)}')
@@ -85,7 +81,7 @@ def init_db():
     try:
         default_barber = User.query.filter_by(username='barber').first()
         if not default_barber:
-            default_barber = User(username='barber', role='barber')
+            default_barber = User(username='barber', email='barber@example.com', role='barber')
             default_barber.set_password('barber_password')
             db.session.add(default_barber)
             db.session.commit()

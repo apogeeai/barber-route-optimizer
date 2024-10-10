@@ -426,6 +426,8 @@ dependencies = [
     { name = "flask-sqlalchemy" },
     { name = "ortools" },
     { name = "psycopg2-binary" },
+    { name = "sqlalchemy" },
+    { name = "werkzeug" },
 ]
 
 [package.metadata]
@@ -436,6 +438,8 @@ requires-dist = [
     { name = "flask-sqlalchemy", specifier = ">=3.1.1" },
     { name = "ortools", specifier = ">=9.11.4210" },
     { name = "psycopg2-binary", specifier = ">=2.9.9" },
+    { name = "sqlalchemy", specifier = ">=2.0.35" },
+    { name = "werkzeug" },
 ]
 
 [[package]]
